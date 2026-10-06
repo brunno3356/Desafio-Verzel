@@ -4,6 +4,12 @@ Suíte pequena de testes da [Verzel Store](https://verzel-store.qa-test-verzel-s
 
 O objetivo é verificar **cinco cenários principais** e manter regressões dos dois bugs reproduzidos. Os cinco cenários geram **11 testes independentes**: variantes de dados não representam novos casos funcionais.
 
+## Relatório de defeitos no Google Docs
+
+[Abrir o relatório público de defeitos da Verzel Store](https://docs.google.com/document/d/1yNE4UrKaINRwG3k9Hg6c0MbgcrnqlcLTna6scdQBGEo/edit).
+
+O documento reúne **BUG-001 e BUG-002**, com ambiente e versão, pré-condições, passos de reprodução, resultado esperado, resultado obtido, impacto e prints incorporados. Qualquer pessoa com o link pode visualizar, sem solicitar acesso; a permissão é somente de leitura.
+
 ## Tecnologias
 
 - Playwright e Playwright Test 1.63.0.
@@ -116,6 +122,24 @@ O escopo atual é intencionalmente reduzido. A suíte não reivindica cobertura 
 
 - **BUG-001 — Frete cobrado no limite exato de R$ 200:** a UI cobra R$ 19,90; o teste continua exigindo frete grátis.
 - **BUG-002 — API permite mais de cinco unidades por produto:** aceita seis; o teste continua exigindo HTTP 422.
+
+<details>
+<summary>Ver print do BUG-001 — cobrança de frete no subtotal de R$ 200,00</summary>
+
+![BUG-001: subtotal de R$ 200,00, frete de R$ 19,90 e total de R$ 219,90](evidencias/automacao/BUG-001-frete.png)
+
+Captura preservada da execução de 06/10/2026, iniciada às 16h53, no horário de Brasília.
+
+</details>
+
+<details>
+<summary>Ver print do BUG-002 — API aceita seis unidades</summary>
+
+![BUG-002: relatório Playwright com HTTP 422 esperado, HTTP 200 recebido e JSON com quantidade 6](evidencias/relatorio-defeitos/BUG-002-relatorio-playwright.jpg)
+
+Captura do relatório de uma execução já existente, iniciada em 06/10/2026 às 18h26, no horário de Brasília. [Requisição e resposta da mesma execução](evidencias/relatorio-defeitos/BUG-002-resposta-api.json). A [origem das evidências](evidencias/relatorio-defeitos/README.md) está registrada junto aos arquivos.
+
+</details>
 
 As duas variantes usam [`test.fail()`](https://playwright.dev/docs/test-annotations), que **executa os testes** e registra a expectativa de falha. Se passarem após uma correção, o runner acusa passagem inesperada. Não usamos `skip`, `fixme` nem assertions ajustadas para aceitar o defeito.
 
