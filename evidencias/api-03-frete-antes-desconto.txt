@@ -1,0 +1,4 @@
+POST /api/carrinho/calcular
+{"itens":[{"produtoId":"P001","quantidade":1},{"produtoId":"P005","quantidade":1},{"produtoId":"P008","quantidade":1}],"cupom":"BEMVINDO10"}
+200
+{"itens":[{"produtoId":"P001","nome":"Camiseta Essencial","precoUnitario":59.9,"quantidade":1,"total":59.9},{"produtoId":"P005","nome":"Mochila Urbana 20L","precoUnitario":100,"quantidade":1,"total":100},{"produtoId":"P008","nome":"Garrafa Térmica 750ml","precoUnitario":50,"quantidade":1,"total":50}],"subtotal":209.9,"desconto":20.99,"frete":0,"freteGratis":true,"valorFaltanteFreteGratis":0,"total":188.91,"cupom":{"codigo":"BEMVINDO10","aplicado":true,"mensagem":"Cupom aplicado: 10% de desconto nos produtos."}}

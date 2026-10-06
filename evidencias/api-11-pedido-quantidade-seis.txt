@@ -1,0 +1,4 @@
+POST /api/pedidos
+{"cliente":{"nome":"Maria Silva","email":"qa.exploratorio@example.com","cep":"01310-100"},"itens":[{"produtoId":"P005","quantidade":6}]}
+201
+{"numero":"VZ-480026","criadoEm":"2026-10-06T18:04:36.170Z","cliente":{"nome":"Maria Silva","email":"qa.exploratorio@example.com","cep":"01310100"},"itens":[{"produtoId":"P005","nome":"Mochila Urbana 20L","precoUnitario":100,"quantidade":6,"total":600}],"subtotal":600,"desconto":0,"frete":0,"freteGratis":true,"valorFaltanteFreteGratis":0,"total":600,"cupom":null}

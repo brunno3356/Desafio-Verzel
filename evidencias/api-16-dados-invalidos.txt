@@ -1,0 +1,4 @@
+POST /api/pedidos
+{"cliente":{"nome":"Maria","email":"email-invalido","cep":"123"},"itens":[{"produtoId":"P005","quantidade":1}]}
+422
+{"erro":{"codigo":"DADOS_INVALIDOS","mensagem":"Existem campos inválidos no pedido.","campos":[{"campo":"cliente.nome","mensagem":"Informe nome e sobrenome."},{"campo":"cliente.email","mensagem":"Informe um e-mail válido."},{"campo":"cliente.cep","mensagem":"Informe um CEP com 8 dígitos."}]}}

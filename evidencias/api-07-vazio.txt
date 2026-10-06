@@ -1,0 +1,4 @@
+POST /api/carrinho/calcular
+{"itens":[]}
+422
+{"erro":{"codigo":"ITENS_OBRIGATORIOS","mensagem":"Informe ao menos um item.","campo":"itens"}}

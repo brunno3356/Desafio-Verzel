@@ -1,0 +1,4 @@
+POST /api/pedidos
+{"cliente":{"nome":"Maria Silva","email":"qa.exploratorio@example.com","cep":"01310-100"},"itens":[{"produtoId":"P005","quantidade":1}],"cupom":"VERAO2026"}
+422
+{"erro":{"codigo":"CUPOM_EXPIRADO","mensagem":"Cupom expirado.","campo":"cupom"}}

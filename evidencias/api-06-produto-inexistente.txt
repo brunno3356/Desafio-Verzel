@@ -1,0 +1,3 @@
+GET /api/produtos/P999
+404
+{"erro":{"codigo":"PRODUTO_NAO_ENCONTRADO","mensagem":"Produto P999 não encontrado."}}

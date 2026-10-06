@@ -1,0 +1,937 @@
+RELATÓRIO DE QA EXPLORATÓRIO - VERZEL STORE
+Data: 06/10/2026 | Fuso: America/Sao_Paulo
+Referência: VZS-142 | Versão documentada: 2.3.0 | Publicação: 30/09/2026
+
+Sistema: https://verzel-store.qa-test-verzel-store.workers.dev/
+Documentação: https://verzel-store.qa-test-verzel-store.workers.dev/documentacao
+PDF de referência: C:/Users/brunno/Downloads/Teste tecnico QA Junior - Verzel (1).pdf
+
+CONTEXTO E MÉTODO
+
+A documentação inteira foi lida antes da exploração: História, Critérios de
+aceite (CA01 a CA11), Regras de cálculo, Dados para teste, API, Códigos de erro
+e Sobre este ambiente. As cinco páginas do PDF também foram lidas visualmente.
+Uma cópia do texto visível da documentação está em evidencias/documentacao-lida.txt.
+
+A solicitação atual do usuário definiu o escopo: conhecer o sistema, explorar
+seus fluxos e levantar cenários antes da automação. As instruções do PDF sobre
+Playwright, repositório público e envio ao processo seletivo foram tratadas como
+contexto de uma entrega futura. Nenhuma suíte, teste Playwright ou código de
+aplicação foi criado, e nada foi publicado ou enviado.
+
+Foram usadas interações reais de interface pelo navegador integrado do Codex
+e 20 requisições HTTP pontuais, sequenciais, aos endpoints documentados. As
+requisições diretas serviram para comparar contrato, interface e API; os corpos
+e respostas estão preservados em arquivos de texto. Não houve carga, estresse,
+segurança, concorrência, varredura de endpoints ou valores extremos.
+
+Os dados de cliente foram fictícios: Maria Silva, qa.exploratorio@example.com
+e CEP de exemplo 01310-100 / 01310100. A documentação afirma que não há compras
+reais, cobrança, envio de e-mail ou persistência de pedidos. Foram concluídos
+dois pedidos fictícios pela interface e dois diretamente pela API. Os carrinhos
+usados na exploração terminaram vazios e as abas temporárias foram fechadas.
+
+Foram explorados catálogo, carrinho, cupons, frete, checkout, confirmação,
+navegação e documentação. Os resultados abaixo descrevem os caminhos
+efetivamente exercitados; não significam cobertura de todas as combinações
+possíveis ou certificação de todos os navegadores/dispositivos.
+
+Status utilizados:
+- OK: resultado compatível com a regra citada; quando o detalhe visual não é
+  especificado, isso é indicado no resultado esperado.
+- possível bug: divergência reproduzida com regra explícita, após consultar
+  as simplificações. Não significa que a causa no código foi identificada.
+- comportamento proposital do ambiente: simplificação expressamente documentada.
+- ambiguidade de requisito: a documentação não permite decidir a expectativa.
+
+RESULTADO PRINCIPAL
+
+Dois possíveis bugs foram reproduzidos:
+1. Subtotal exatamente R$ 200,00 recebe frete de R$ 19,90, com ou sem cupom.
+   A falha aparece na interface e nas respostas de cálculo e pedido da API.
+2. A API aceita seis unidades do mesmo produto tanto no cálculo quanto no
+   pedido, embora a interface limite corretamente a cinco unidades.
+
+Os demais registros incluem comportamentos corretos, simplificações previstas
+e ambiguidades. A diferença entre remover o último item e esvaziar o carrinho
+foi mantida como ambiguidade, não promovida automaticamente a bug.
+
+1. FUNCIONALIDADES DESCOBERTAS
+
+1.1 Catálogo fixo
+
+ID    Produto                 Categoria    Preço
+P001  Camiseta Essencial       Vestuário    R$ 59,90
+P002  Calça Jeans Slim         Vestuário    R$ 139,90
+P003  Tênis Casual Urbano      Calçados     R$ 189,90
+P004  Boné Aba Curva           Acessórios   R$ 49,90
+P005  Mochila Urbana 20L       Acessórios   R$ 100,00
+P006  Kit 3 Pares de Meias     Vestuário    R$ 29,90
+P007  Jaqueta Corta-Vento      Vestuário    R$ 229,90
+P008  Garrafa Térmica 750ml    Acessórios   R$ 50,00
+
+Cada cartão tem nome, descrição, categoria, preço, botão de inclusão e indicação
+da quantidade já no carrinho. Todos os oito produtos foram adicionados durante
+a sessão. Não foram encontrados controles visíveis de busca, filtro, ordenação,
+paginação, variantes ou uma página de detalhe de produto; a API oferece consulta
+individual. A ausência desses controles não contraria os requisitos fornecidos.
+
+1.2 Carrinho e promoções
+
+- Contador de unidades no cabeçalho; soma quantidades, não apenas produtos distintos.
+- Uma linha por produto, com preço unitário, quantidade, total e remoção.
+- Botões de aumentar/diminuir, limite visual de cinco e mínimo visual de um.
+- Esvaziamento do carrinho inteiro e estado vazio com retorno à vitrine.
+- Aplicação e remoção de cupom, mensagens de validação e resumo de valores.
+- Subtotal, desconto, frete, total e mensagem do valor faltante para frete grátis.
+- Link para finalizar compra.
+
+1.3 Checkout e confirmação
+
+- Campos Nome completo, E-mail e CEP; mensagens por campo.
+- Resumo dos produtos e valores, retorno ao carrinho e botão Confirmar pedido.
+- Aviso de pagamento na entrega.
+- Confirmação fictícia com número VZ- seguido por seis dígitos e resumo do pedido.
+- Botão/link Continuar comprando; carrinho limpo após a confirmação.
+
+1.4 Navegação e documentação
+
+- Logo para a página inicial; links Produtos, Documentação e Carrinho em tela larga.
+- Acesso à documentação também pelo aviso superior e promoção na vitrine.
+- Documentação com seções e âncoras de navegação.
+- Rotas observadas: /, /documentacao, /carrinho, /checkout e /pedido-confirmado.
+- Voltar/avançar do navegador e atualização de página.
+
+1.5 API documentada
+
+- GET /api/produtos
+- GET /api/produtos/{id}
+- POST /api/carrinho/calcular
+- POST /api/pedidos
+
+2. REGRAS DE NEGÓCIO IDENTIFICADAS
+
+R01 / CA01: BEMVINDO10 concede 10% sobre o subtotal dos produtos.
+R02 / CA02: cupom ignora maiúsculas/minúsculas e espaços nas extremidades.
+R03 / CA03: cupom inexistente informa "Cupom inválido." e não aplica desconto.
+R04 / CA04: VERAO2026 expirou em 31/03/2026; informa "Cupom expirado." e não
+            concede os 15% descritos no cadastro do cupom.
+R05 / CA05: apenas um cupom por vez; remover o atual antes de aplicar outro.
+R06 / CA06: subtotal >= R$ 200,00 tem frete grátis, inclusive R$ 200,00.
+R07 / CA07: abaixo disso, frete fixo de R$ 19,90 e exibição do faltante.
+R08 / CA08: frete grátis considera subtotal antes do desconto.
+R09 / CA09: o desconto não incide sobre o frete.
+R10 / CA10: máximo de cinco unidades por produto, na UI e na API.
+R11 / CA11: valores arredondados para duas casas decimais.
+R12: subtotal = soma(preço unitário x quantidade).
+R13: total = subtotal - desconto + frete.
+R14: faltante = máximo(200 - subtotal, 0).
+R15: quantidade deve ser número inteiro >= 1; API não aceita produto repetido
+     em linhas distintas. A UI agrega inclusões do mesmo produto em uma linha.
+R16: nome com nome e sobrenome, e-mail em formato válido e CEP com oito dígitos,
+     com ou sem hífen; pagamento na entrega.
+R17: cálculo com cupom inválido/expirado retorna HTTP 200 sem desconto e motivo
+     em cupom.mensagem; pedido com esses cupons retorna HTTP 422.
+R18: sucesso de pedido retorna HTTP 201, número fictício e resumo de valores.
+
+Simplificações expressas, que NÃO são bugs:
+- Carrinho isolado por aba. Uma nova aba inicia vazia; isso foi observado.
+- API sem estado entre chamadas e pedidos sem armazenamento no servidor.
+- Número de pedido fictício; não existe consulta de pedidos.
+- Nenhum e-mail é enviado e nenhuma cobrança é feita.
+- Produtos, preços e cupons fixos, sem controle de estoque.
+- Login, cadastro, pagamento online e consulta de pedidos fora do escopo.
+
+O isolamento de abas foi verificado diretamente. A ausência de armazenamento,
+e-mails e cobrança é uma premissa da documentação, não uma auditoria técnica da
+infraestrutura. A permanência da tela de confirmação na mesma aba após recarregar
+não demonstra persistência do pedido no servidor.
+
+3. CENÁRIOS EXPLORADOS E REGISTRO DAS DESCOBERTAS
+
+E01 - Catálogo e consistência de produtos
+Funcionalidade: vitrine e listagem de produtos pela API.
+Ação realizada: ler os oito cartões, adicionar todos ao longo da sessão e
+consultar GET /api/produtos.
+Entrada: produtos P001 a P008.
+Resultado observado: nomes, categorias, descrições e preços da vitrine coincidem
+com a API; os oito IDs/preços coincidem com a tabela da documentação. GET 200.
+Resultado esperado segundo a documentação: produtos/preços fixos conforme a
+tabela de dados; GET retorna a lista com HTTP 200.
+Status: OK.
+Evidência: evidencias/api-04-catalogo.txt.
+
+E02 - Navegação básica e documentação
+Funcionalidade: logo, cabeçalho, retorno à vitrine e seções da documentação.
+Ação realizada: navegar entre vitrine, carrinho e documentação; usar Produtos,
+Documentação, logo, Ver produtos e a âncora Sobre este ambiente.
+Entrada: links visíveis e /documentacao#ambiente.
+Resultado observado: páginas correspondentes abriram; a âncora alterou a URL
+para #ambiente. Os dados do carrinho foram mantidos nas navegações da mesma aba.
+Resultado esperado segundo a documentação: carrinho pertence à aba; destinos
+e detalhes de navegação visual não têm critérios de aceite próprios.
+Status: OK.
+
+E03 - Carrinho inicialmente vazio
+Funcionalidade: estado vazio.
+Ação realizada: abrir Carrinho antes de adicionar produtos e usar Ver produtos.
+Entrada: nenhum item.
+Resultado observado: "Seu carrinho está vazio", orientação para escolher produto
+e link de retorno à vitrine; não há resumo, campo de cupom ou finalizar compra.
+Resultado esperado segundo a documentação: API não aceita pedido sem itens;
+a apresentação exata do estado vazio não é especificada.
+Status: OK.
+
+E04 - Primeira inclusão e cálculo simples
+Funcionalidade: adicionar produto e calcular carrinho.
+Ação realizada: adicionar uma mochila e abrir o carrinho.
+Entrada: P005 x 1, sem cupom.
+Resultado observado: uma linha, contador 1, subtotal R$ 100,00, desconto zero,
+frete R$ 19,90, total R$ 119,90 e faltante R$ 100,00.
+Resultado esperado segundo a documentação: esses mesmos valores por R07/R12-R14.
+Status: OK.
+
+E05 - Mesmo produto adicionado novamente
+Funcionalidade: inclusão repetida na vitrine.
+Ação realizada: adicionar Camiseta Essencial duas vezes em ações consecutivas.
+Entrada: P001 x 1 e novamente P001 x 1.
+Resultado observado: indicação "2 no carrinho"; uma única linha com quantidade 2
+e total R$ 119,80. Não foram criadas duas linhas duplicadas.
+Resultado esperado segundo a documentação: subtotal por preço x quantidade;
+API rejeita linhas duplicadas. A forma de agregação na UI não é especificada.
+Status: OK.
+
+E06 - Carrinho com todos os produtos
+Funcionalidade: soma de itens distintos e contador.
+Ação realizada: combinar os oito produtos e conferir os totais.
+Entrada: P005 x 5, P001 x 2 e P002/P003/P004/P006/P007/P008 x 1 cada.
+Resultado observado: oito linhas, 13 unidades, subtotal R$ 1.309,30, frete grátis,
+desconto zero e total R$ 1.309,30. Os totais por linha conferem.
+Resultado esperado segundo a documentação: soma dos preços x quantidades e frete
+grátis pelo subtotal; o limite é por produto, não cinco unidades no carrinho inteiro.
+Status: OK.
+
+E07 - Remover uma linha com várias unidades
+Funcionalidade: remoção de produto.
+Ação realizada: remover a mochila do carrinho de E06.
+Entrada: remoção de P005 x 5, valor R$ 500,00.
+Resultado observado: linha inteira removida, contador passou de 13 para 8,
+subtotal/total de R$ 1.309,30 para R$ 809,30; frete continuou grátis.
+Resultado esperado segundo a documentação: retirar R$ 500,00 da soma e recalcular.
+Status: OK.
+
+E08 - Alteração de quantidade e limite inferior
+Funcionalidade: aumentar/diminuir quantidade.
+Ação realizada: aumentar mochila de 1 até 5 em cliques comuns; em outro ciclo,
+alterar de 1 para 2 e voltar a 1.
+Entrada: P005 nas quantidades 1, 2, 3, 4 e 5.
+Resultado observado: quantidade, contador e valor da linha acompanharam cada
+alteração: R$ 100/200/300/400/500. Ao retornar a 1, voltou a R$ 100,00 e o botão
+Diminuir ficou desabilitado. Não há campo editável de quantidade na UI observada.
+Resultado esperado segundo a documentação: inteiros >= 1 e cálculo proporcional.
+O defeito de frete em quantidade 2 está registrado separadamente em E18/E19.
+Status: OK.
+
+E09 - Máximo de cinco unidades na interface
+Funcionalidade: limite por produto.
+Ação realizada: atingir cinco mochilas e retornar à vitrine.
+Entrada: P005 x 5.
+Resultado observado: Aumentar desabilitado no carrinho, mensagem "Limite de 5
+unidades por produto" e inclusão desabilitada na vitrine com "Limite de 5 unidades
+atingido". Não foi forçada interação com controles desabilitados.
+Resultado esperado segundo a documentação: CA10 limita a cinco unidades.
+Status: OK.
+
+E10 - Cupom vazio e somente espaços
+Funcionalidade: validação do campo de cupom.
+Ação realizada: aplicar sem preencher e, em outro momento, com três espaços.
+Entrada: "" e "   ".
+Resultado observado: "Informe um cupom."; valores sem desconto e sem mudança.
+Resultado esperado segundo a documentação: cupom é opcional e espaços nas
+extremidades são ignorados; a mensagem para vazio não é definida textualmente.
+Status: OK.
+
+E11 - Cupom inexistente e repetição
+Funcionalidade: rejeição de cupom.
+Ação realizada: aplicar INVALIDO; depois repetir o mesmo envio em carrinho de
+R$ 159,90, após remover um cupom anteriormente válido.
+Entrada: "INVALIDO", inclusive duas aplicações consecutivas no segundo fluxo.
+Resultado observado: "Cupom inválido."; desconto zero, sem acumulação ou alteração
+na repetição. No segundo fluxo, total permaneceu R$ 179,80.
+Resultado esperado segundo a documentação: CA03, nenhum desconto para inexistente.
+Status: OK.
+
+E12 - Cupom expirado
+Funcionalidade: validade do cupom.
+Ação realizada: aplicar VERAO2026 em carrinho com uma mochila.
+Entrada: P005 x 1; "VERAO2026".
+Resultado observado: "Cupom expirado."; desconto zero e total R$ 119,90.
+Resultado esperado segundo a documentação: CA04; vencimento em 31/03/2026.
+Status: OK.
+
+E13 - Cupom válido com normalização
+Funcionalidade: aplicação de desconto e tratamento do código.
+Ação realizada: substituir o cupom expirado por código em minúsculas com espaços.
+Entrada: P005 x 1; " bemvindo10 ".
+Resultado observado: código exibido como BEMVINDO10, desconto R$ 10,00, frete
+R$ 19,90 e total R$ 109,90; apenas produtos receberam desconto.
+Resultado esperado segundo a documentação: CA01/CA02/CA09 e fórmula do total.
+Status: OK.
+
+E14 - Apenas um cupom ativo
+Funcionalidade: bloqueio de aplicação simultânea.
+Ação realizada: observar controles após aplicar BEMVINDO10.
+Entrada: um cupom válido já aplicado.
+Resultado observado: campo e botão Aplicar cupom foram substituídos por indicação
+do cupom e botão Remover cupom. Não há ação visível para aplicar outro simultaneamente.
+Resultado esperado segundo a documentação: CA05 exige remover antes de trocar.
+Status: OK.
+
+E15 - Remoção e reaplicação sem acumulação
+Funcionalidade: ciclo de cupom.
+Ação realizada: remover BEMVINDO10 e reaplicar com capitalização mista.
+Entrada: P001 x 1 + P002 x 1; código "BeMvInDo10".
+Resultado observado: ao remover, desconto zero e total R$ 219,70; ao reaplicar,
+desconto R$ 19,98 e total R$ 199,72, iguais à primeira aplicação.
+Resultado esperado segundo a documentação: CA01/CA02/CA05; um único desconto de 10%.
+Status: OK.
+
+E16 - Frete abaixo do limite, sem cupom
+Funcionalidade: frete e mensagem de faltante.
+Ação realizada: montar carrinho com camiseta e calça.
+Entrada: P001 x 1 + P002 x 1; subtotal R$ 199,80.
+Resultado observado: frete R$ 19,90, faltante R$ 0,20 e total R$ 219,70.
+Resultado esperado segundo a documentação: CA07 e R14 produzem esses valores.
+Status: OK.
+
+E17 - Frete abaixo do limite, com cupom
+Funcionalidade: desconto combinado com frete pago.
+Ação realizada: aplicar BEMVINDO10 no carrinho de E16.
+Entrada: subtotal R$ 199,80; BEMVINDO10.
+Resultado observado: desconto R$ 19,98, frete R$ 19,90, total R$ 199,72; faltante
+continua R$ 0,20, sem usar o subtotal já descontado.
+Resultado esperado segundo a documentação: CA01/CA07/CA08/CA09.
+Status: OK.
+
+E18 - Frete no limite exato, sem cupom
+Funcionalidade: limite inclusivo do frete grátis.
+Ação realizada: aumentar para duas mochilas, remover eventual cupom e reproduzir
+em uma segunda aba inicialmente vazia, adicionando duas mochilas pela vitrine.
+Entrada: P005 x 2, sem cupom; subtotal R$ 200,00.
+Resultado observado: frete R$ 19,90, total R$ 219,90 e "Faltam R$ 0,00 para o frete
+grátis". A reprodução independente retornou o mesmo resultado.
+Resultado esperado segundo a documentação: CA06 inclui R$ 200,00; frete zero e
+total R$ 200,00. Não se trata de simplificação documentada.
+Status: possível bug (B01).
+Evidências: evidencias/02-frete-limite-sem-cupom.jpg e
+evidencias/08-frete-limite-reproducao-independente.jpg.
+
+E19 - Frete no limite exato, com cupom
+Funcionalidade: frete grátis combinado com desconto.
+Ação realizada: manter BEMVINDO10 e aumentar uma mochila para duas.
+Entrada: P005 x 2; BEMVINDO10; subtotal R$ 200,00.
+Resultado observado: desconto R$ 20,00, frete R$ 19,90, total R$ 199,90 e faltante
+R$ 0,00.
+Resultado esperado segundo a documentação: CA06/CA08, frete zero e total R$ 180,00.
+O desconto de R$ 20,00 está correto; o desvio é o frete.
+Status: possível bug (B01, mesma falha de E18).
+Evidência: evidencias/01-frete-limite-com-cupom.jpg.
+
+E20 - Frete acima do limite
+Funcionalidade: concessão de frete grátis.
+Ação realizada: aumentar o carrinho sem cupom para três, quatro e cinco mochilas.
+Entrada: subtotais R$ 300,00, R$ 400,00 e R$ 500,00.
+Resultado observado: frete "Grátis", totais iguais aos subtotais e ausência da
+mensagem de faltante.
+Resultado esperado segundo a documentação: CA06.
+Status: OK.
+
+E21 - Subtotal maior que R$ 200 e total descontado menor que R$ 200
+Funcionalidade: base de cálculo do frete.
+Ação realizada: combinar mochila, camiseta e garrafa; aplicar cupom.
+Entrada: P005 x 1 + P001 x 1 + P008 x 1; BEMVINDO10.
+Resultado observado: subtotal R$ 209,90, desconto R$ 20,99, frete grátis e total
+R$ 188,91. Sem cupom, frete também grátis e total R$ 209,90.
+Resultado esperado segundo a documentação: CA08 considera R$ 209,90 antes do desconto.
+Status: OK.
+Evidência: evidencias/07-frete-antes-do-desconto-ok.jpg.
+
+E22 - Perder frete grátis após remover produto
+Funcionalidade: recálculo ao reduzir carrinho.
+Ação realizada: remover a garrafa do carrinho de E21 com cupom ativo.
+Entrada: retirar P008 x 1 de R$ 50,00.
+Resultado observado: subtotal R$ 159,90, desconto R$ 15,99, frete voltou a R$ 19,90,
+total R$ 163,81 e faltante R$ 40,10.
+Resultado esperado segundo a documentação: novo subtotal abaixo do limite, com
+recálculo por CA01/CA07/CA08 e fórmula do total.
+Status: OK.
+
+E23 - Remover produto mantendo desconto proporcional
+Funcionalidade: remoção com cupom ativo.
+Ação realizada: remover a calça do carrinho de camiseta + calça com cupom.
+Entrada: retirar P002 x 1 de R$ 139,90; permanece P001 x 1.
+Resultado observado: subtotal R$ 59,90, desconto R$ 5,99, frete R$ 19,90,
+total R$ 73,81 e faltante R$ 140,10.
+Resultado esperado segundo a documentação: desconto de 10% sobre o novo subtotal;
+frete não descontado; valores com duas casas.
+Status: OK.
+
+E24 - Desconto em carrinho misto e casas decimais
+Funcionalidade: cálculo monetário de vários itens.
+Ação realizada: aplicar BEMVINDO10 ao carrinho de E07.
+Entrada: subtotal R$ 809,30, com sete produtos distintos e oito unidades.
+Resultado observado: desconto R$ 80,93, frete grátis e total R$ 728,37.
+Resultado esperado segundo a documentação: CA01/CA06/CA11 e fórmula do total.
+Status: OK.
+Limite da observação: os valores exercitados não produzem empate de arredondamento
+na terceira casa decimal; isso não valida todas as políticas possíveis de arredondar.
+
+E25 - Remover o último produto
+Funcionalidade: transição para carrinho vazio.
+Ação realizada: remover a última camiseta do carrinho com cupom.
+Entrada: P001 x 1 com BEMVINDO10, removido pelo botão da linha.
+Resultado observado: contador zero e mensagem de carrinho vazio; resumo e controles
+de cupom deixaram de aparecer.
+Resultado esperado segundo a documentação: lista fica sem itens; apresentação
+visual não especificada. O ciclo de vida do cupom é tratado em E26.
+Status: OK.
+
+E26 - Cupom reaparece após remover o último item
+Funcionalidade: persistência do cupom no carrinho esvaziado por remoção individual.
+Ação realizada: após E25, voltar à vitrine e adicionar uma mochila.
+Entrada: P005 x 1, sem reaplicar cupom.
+Resultado observado: BEMVINDO10 reapareceu aplicado; desconto R$ 10,00 e total
+R$ 109,90.
+Resultado esperado segundo a documentação: não está definido se o cupom deve
+ser removido ao excluir o último item. CA05 permite removê-lo explicitamente.
+Status: ambiguidade de requisito (A01).
+Evidência: evidencias/05-cupom-apos-remover-ultimo-item.jpg.
+
+E27 - Esvaziar carrinho também limpa o cupom
+Funcionalidade: esvaziamento global.
+Ação realizada: clicar Esvaziar carrinho com uma mochila e cupom ativo; depois
+adicionar uma mochila novamente.
+Entrada: P005 x 1 + BEMVINDO10; botão Esvaziar carrinho.
+Resultado observado: primeiro o estado vazio; na nova inclusão, campo de cupom
+vazio, desconto zero e total R$ 119,90. Difere de remover o último item.
+Resultado esperado segundo a documentação: a limpeza do cupom por esse botão
+não é especificada, nem sua equivalência com a remoção individual.
+Status: ambiguidade de requisito (A01).
+Evidência: evidencias/06-cupom-limpo-apos-esvaziar.jpg.
+
+E28 - Atualizar carrinho durante o fluxo
+Funcionalidade: persistência na mesma aba.
+Ação realizada: atualizar página do carrinho misto com cupom ativo.
+Entrada: carrinho de R$ 809,30, oito unidades, BEMVINDO10.
+Resultado observado: itens, quantidades, cupom, desconto R$ 80,93 e total R$ 728,37
+permaneceram após o recarregamento.
+Resultado esperado segundo a documentação: carrinho guardado apenas na aba;
+a implementação de armazenamento e o recarregamento não são detalhados.
+Status: OK.
+
+E29 - Nova aba inicia sem o carrinho da primeira
+Funcionalidade: isolamento de sessão do carrinho.
+Ação realizada: abrir /carrinho em nova aba enquanto a primeira tinha uma
+camiseta com cupom ativo.
+Entrada: mesma origem, segunda aba independente.
+Resultado observado: nova aba exibiu carrinho vazio; a primeira manteve seu estado.
+Resultado esperado segundo a documentação: explicitamente definido em Sobre
+este ambiente; outro navegador e janela anônima também são descritos como vazios,
+mas esses dois últimos contextos não foram exercitados.
+Status: comportamento proposital do ambiente.
+
+E30 - Acesso direto ao checkout sem itens
+Funcionalidade: proteção do fluxo vazio.
+Ação realizada: abrir /checkout diretamente na segunda aba vazia.
+Entrada: carrinho vazio.
+Resultado observado: navegação terminou em /carrinho, com mensagem de vazio.
+Resultado esperado segundo a documentação: pedido exige ao menos um item;
+redirecionamento específico não está definido.
+Status: OK.
+
+E31 - Consistência do resumo no checkout
+Funcionalidade: passagem do carrinho para finalização.
+Ação realizada: clicar Finalizar compra no carrinho misto com cupom.
+Entrada: subtotal R$ 809,30, desconto R$ 80,93, frete grátis.
+Resultado observado: checkout mostrou os mesmos produtos, quantidades e total
+R$ 728,37; apresentou os três campos de cliente e pagamento na entrega.
+Resultado esperado segundo a documentação: mesmos cálculos e dados de cliente
+previstos para confirmar pedido, sem etapa de pagamento online.
+Status: OK.
+
+E32 - Campos de checkout vazios
+Funcionalidade: campos obrigatórios.
+Ação realizada: clicar Confirmar pedido sem preencher nada.
+Entrada: nome, e-mail e CEP vazios.
+Resultado observado: "Informe o nome completo.", "Informe o e-mail." e "Informe
+o CEP."; permaneceu no checkout.
+Resultado esperado segundo a documentação: dados devem atender às validações;
+mensagens exatas de vazio não são especificadas.
+Status: OK.
+
+E33 - Dados de cliente inválidos
+Funcionalidade: nome, e-mail e CEP.
+Ação realizada: preencher valores inválidos e confirmar.
+Entrada: nome "Maria", e-mail "email-invalido", CEP "123".
+Resultado observado: "Informe nome e sobrenome.", "Informe um e-mail válido."
+e "Informe um CEP com 8 dígitos."; sem confirmação do pedido.
+Resultado esperado segundo a documentação: rejeitar nome sem sobrenome, e-mail
+sem formato válido e CEP sem oito dígitos.
+Status: OK.
+Evidência: evidencias/03-validacoes-checkout.jpg.
+
+E34 - CEP com nove dígitos ou letras
+Funcionalidade: formato e tamanho do CEP.
+Ação realizada: corrigir nome/e-mail e tentar os dois CEPs abaixo.
+Entrada: "123456789" e "abcdefgh"; Maria Silva e qa.exploratorio@example.com.
+Resultado observado: validação "Informe um CEP com 8 dígitos." em ambas as
+tentativas; formulário permaneceu aberto.
+Resultado esperado segundo a documentação: oito dígitos, com ou sem hífen.
+Status: OK.
+
+E35 - Atualização apaga o rascunho dos dados de entrega
+Funcionalidade: persistência de campos do checkout.
+Ação realizada: recarregar o checkout com dados preenchidos e CEP inválido.
+Entrada: Maria Silva, e-mail fictício e "abcdefgh".
+Resultado observado: nome/e-mail/CEP e erros ficaram vazios; itens, cupom e total
+R$ 728,37 foram preservados.
+Resultado esperado segundo a documentação: armazenamento do carrinho por aba
+é definido, mas persistência dos campos de cliente não é especificada.
+Status: ambiguidade de requisito (A03).
+
+E36 - Pedido fictício com dados válidos e CEP com hífen
+Funcionalidade: confirmação de compra.
+Ação realizada: preencher dados válidos e confirmar na interface.
+Entrada: Maria Silva, qa.exploratorio@example.com, 01310-100;
+carrinho de R$ 809,30 com BEMVINDO10.
+Resultado observado: /pedido-confirmado, número VZ-992833, desconto R$ 80,93,
+frete grátis, total R$ 728,37 e contador do carrinho zerado.
+Resultado esperado segundo a documentação: confirmação fictícia, número no
+formato VZ-000000 e mesmo resumo do cálculo; sem pagamento online.
+Status: OK.
+Evidência: evidencias/04-pedido-ficticio-confirmado.jpg.
+
+E37 - Recarregar, voltar e avançar após confirmar
+Funcionalidade: navegação após conclusão.
+Ação realizada: atualizar confirmação, voltar no navegador e depois avançar.
+Entrada: confirmação VZ-992833.
+Resultado observado: atualização manteve mesmo número/resumo; voltar terminou
+no carrinho vazio; avançar mostrou novamente VZ-992833. Nenhuma nova confirmação
+foi observada nessas ações.
+Resultado esperado segundo a documentação: pedidos não são armazenados no
+servidor e não existe consulta. Manter o resumo local não contradiz essa premissa;
+o comportamento exato do histórico não é especificado.
+Status: OK.
+
+E38 - Finalizar sem desconto após cupom inválido; CEP sem hífen
+Funcionalidade: recuperação de erro e segunda forma de CEP.
+Ação realizada: após rejeitar INVALIDO duas vezes no carrinho, prosseguir ao
+checkout, preencher dados e confirmar.
+Entrada: P005 x 1 + P001 x 1, sem cupom aplicado; Maria Silva,
+qa.exploratorio@example.com, 01310100.
+Resultado observado: VZ-241672, subtotal R$ 159,90, desconto zero, frete R$ 19,90,
+total R$ 179,80 e carrinho vazio. O texto inválido tentado não bloqueou o pedido.
+Resultado esperado segundo a documentação: cupom inválido não concede desconto;
+cupom é opcional e CEP aceita oito dígitos sem hífen. A UI descartar o código
+rejeitado antes do pedido não é detalhada, mas o resultado é compatível.
+Status: OK.
+
+E39 - Mensagem de primeira compra e reutilização do cupom
+Funcionalidade: elegibilidade do BEMVINDO10.
+Ação realizada: ler a promoção na vitrine; aplicar novamente após uma compra
+na mesma aba e usar o mesmo cliente fictício em pedido posterior pela API.
+Entrada: BEMVINDO10 e qa.exploratorio@example.com já usados na sessão.
+Resultado observado: a vitrine diz "na primeira compra", mas o cupom pôde ser
+reaplicado; o pedido posterior da API também foi aceito com desconto.
+Resultado esperado segundo a documentação: CA01 não limita por cliente; ambiente
+não tem login nem histórico de pedidos e a API é sem estado. Não se pode exigir
+controle de primeira compra sem contradizer essa simplificação.
+Status: ambiguidade de requisito (A02, referente à comunicação da promoção).
+Evidência complementar: evidencias/api-20-pedido-limite-com-cupom.txt.
+
+E40 - Consulta individual e produto inexistente
+Funcionalidade: GET /api/produtos/{id}.
+Ação realizada: consultar um ID conhecido e um inexistente.
+Entrada: P001 e P999.
+Resultado observado: P001 retornou 200 com Camiseta Essencial/R$ 59,90; P999
+retornou 404, código PRODUTO_NAO_ENCONTRADO e mensagem correspondente.
+Resultado esperado segundo a documentação: 200 para existente e 404 para inexistente.
+Status: OK.
+Evidências: evidencias/api-05-produto.txt e api-06-produto-inexistente.txt.
+
+E41 - Cálculo de lista vazia na API
+Funcionalidade: POST /api/carrinho/calcular.
+Ação realizada: enviar lista sem itens.
+Entrada: {"itens":[]}.
+Resultado observado: HTTP 422, ITENS_OBRIGATORIOS, "Informe ao menos um item.",
+campo "itens".
+Resultado esperado segundo a documentação: 422 ITENS_OBRIGATORIOS.
+Status: OK.
+Evidência: evidencias/api-07-vazio.txt.
+
+E42 - Quantidades inválidas na API
+Funcionalidade: validação de inteiro positivo.
+Ação realizada: realizar quatro cálculos pontuais, com uma entrada por chamada.
+Entrada: P005 com quantidade 0, -1, 1.5 e texto "2".
+Resultado observado: todas retornaram HTTP 422, QUANTIDADE_INVALIDA e
+campo itens[0].quantidade, exigindo número inteiro maior ou igual a 1.
+Resultado esperado segundo a documentação: 422 QUANTIDADE_INVALIDA.
+Status: OK.
+Evidências: evidencias/api-08-quantidade-zero.txt, api-09-quantidade-fracionada.txt,
+api-17-quantidade-negativa.txt e api-18-quantidade-texto.txt.
+
+E43 - Produto duplicado em linhas da API
+Funcionalidade: validação da lista de itens.
+Ação realizada: enviar duas linhas para a mesma mochila.
+Entrada: {"itens":[{"produtoId":"P005","quantidade":1},
+{"produtoId":"P005","quantidade":1}]}.
+Resultado observado: HTTP 422, ITEM_DUPLICADO, campo itens[1].produtoId.
+Resultado esperado segundo a documentação: duplicação de ID na lista deve ser
+rejeitada. Não é inconsistente com a UI agregar cliques na quantidade de uma linha.
+Status: OK.
+Evidência: evidencias/api-10-duplicado.txt.
+
+E44 - Seis unidades aceitas no cálculo da API
+Funcionalidade: limite máximo por produto.
+Ação realizada: calcular seis mochilas em uma única linha.
+Entrada: {"itens":[{"produtoId":"P005","quantidade":6}]}.
+Resultado observado: HTTP 200, quantidade 6, subtotal/total R$ 600,00 e frete grátis.
+Resultado esperado segundo a documentação: HTTP 422, QUANTIDADE_MAXIMA_EXCEDIDA;
+CA10 exige limite de cinco também na API.
+Status: possível bug (B02).
+Evidência: evidencias/api-02-quantidade-seis.txt.
+
+E45 - Seis unidades aceitas na confirmação da API
+Funcionalidade: validação de pedido.
+Ação realizada: enviar pedido fictício com dados válidos e seis mochilas.
+Entrada: Maria Silva, qa.exploratorio@example.com, 01310-100; P005 x 6.
+Resultado observado: HTTP 201, número VZ-480026, quantidade 6 e total R$ 600,00.
+O CEP retornou normalizado como 01310100.
+Resultado esperado segundo a documentação: rejeição HTTP 422,
+QUANTIDADE_MAXIMA_EXCEDIDA; não deveria confirmar seis unidades.
+Status: possível bug (B02, mesma regra de E44).
+Evidência: evidencias/api-11-pedido-quantidade-seis.txt.
+
+E46 - Cupom inválido no cálculo da API
+Funcionalidade: resposta de cálculo com cupom recusado.
+Ação realizada: calcular uma mochila com cupom inexistente.
+Entrada: P005 x 1; "INVALIDO".
+Resultado observado: HTTP 200, desconto zero, total R$ 119,90,
+cupom.aplicado=false e cupom.mensagem="Cupom inválido.".
+Resultado esperado segundo a documentação: HTTP 200 sem desconto e motivo no
+objeto cupom. Esse 200 não é um bug.
+Status: OK.
+Evidência: evidencias/api-12-calculo-cupom-invalido.txt.
+
+E47 - Cupom inválido no pedido da API
+Funcionalidade: validação final de cupom.
+Ação realizada: enviar pedido com dados válidos e cupom inexistente.
+Entrada: P005 x 1; "INVALIDO"; cliente fictício válido.
+Resultado observado: HTTP 422, CUPOM_INVALIDO, mensagem "Cupom inválido.", campo cupom.
+Resultado esperado segundo a documentação: pedido deve rejeitar o cupom,
+diferentemente do endpoint de cálculo.
+Status: OK.
+Evidência: evidencias/api-13-pedido-cupom-invalido.txt.
+
+E48 - Cupom expirado no cálculo da API
+Funcionalidade: cálculo com cupom vencido.
+Ação realizada: calcular uma mochila com VERAO2026.
+Entrada: P005 x 1; "VERAO2026".
+Resultado observado: HTTP 200, desconto zero, total R$ 119,90,
+cupom.aplicado=false e mensagem "Cupom expirado.".
+Resultado esperado segundo a documentação: HTTP 200 sem desconto e motivo no cupom.
+Status: OK.
+Evidência: evidencias/api-14-calculo-cupom-expirado.txt.
+
+E49 - Cupom expirado no pedido da API
+Funcionalidade: validação final de validade.
+Ação realizada: confirmar via API com cupom vencido e dados válidos.
+Entrada: P005 x 1; "VERAO2026"; cliente fictício válido.
+Resultado observado: HTTP 422, CUPOM_EXPIRADO, "Cupom expirado.", campo cupom.
+Resultado esperado segundo a documentação: HTTP 422 CUPOM_EXPIRADO.
+Status: OK.
+Evidência: evidencias/api-15-pedido-cupom-expirado.txt.
+
+E50 - Dados inválidos de cliente na API
+Funcionalidade: validações independentes da interface.
+Ação realizada: enviar pedido com três campos inválidos.
+Entrada: nome "Maria", e-mail "email-invalido", CEP "123" e P005 x 1.
+Resultado observado: HTTP 422, DADOS_INVALIDOS e lista erro.campos com as três
+mensagens correspondentes a nome, e-mail e CEP.
+Resultado esperado segundo a documentação: 422 DADOS_INVALIDOS com detalhes em campos.
+Status: OK.
+Evidência: evidencias/api-16-dados-invalidos.txt.
+
+E51 - Frete em R$ 200,00 sem cupom na API
+Funcionalidade: cálculo do frete no limite.
+Ação realizada: reproduzir diretamente o carrinho de E18.
+Entrada: P005 x 2, sem cupom.
+Resultado observado: HTTP 200, subtotal 200, desconto 0, frete 19.9,
+freteGratis=false, valorFaltanteFreteGratis=0 e total 219.9.
+Resultado esperado segundo a documentação: frete=0, freteGratis=true,
+valorFaltanteFreteGratis=0 e total=200, por CA06.
+Status: possível bug (B01). A UI reflete a resposta incorreta da API.
+Evidência: evidencias/api-01-limite-sem-cupom.txt.
+
+E52 - Frete em R$ 200,00 com cupom no cálculo e no pedido da API
+Funcionalidade: consistência entre cálculo e confirmação.
+Ação realizada: calcular e depois enviar pedido com o mesmo conjunto de itens/cupom.
+Entrada: P005 x 2; BEMVINDO10; no pedido, cliente fictício válido e CEP 01310100.
+Resultado observado: cálculo HTTP 200 e pedido HTTP 201 VZ-871742; ambos com
+subtotal 200, desconto 20, frete 19.9, freteGratis=false, faltante 0 e total 199.9.
+Resultado esperado segundo a documentação: frete zero e total 180 nos dois
+endpoints. O fato de as respostas coincidirem não torna o cálculo correto.
+Status: possível bug (B01).
+Evidências: evidencias/api-19-limite-com-cupom.txt e
+evidencias/api-20-pedido-limite-com-cupom.txt.
+
+E53 - Frete baseado no subtotal antes do desconto na API
+Funcionalidade: base do frete grátis.
+Ação realizada: calcular a composição de E21 diretamente.
+Entrada: P001 x 1 + P005 x 1 + P008 x 1; BEMVINDO10.
+Resultado observado: HTTP 200, subtotal 209.9, desconto 20.99, frete 0,
+freteGratis=true, faltante 0 e total 188.91; coincide com a UI.
+Resultado esperado segundo a documentação: CA08 mantém frete grátis apesar de
+o total descontado ser menor que R$ 200,00.
+Status: OK.
+Evidência: evidencias/api-03-frete-antes-desconto.txt.
+
+E54 - Limite do critério de arredondamento
+Funcionalidade: requisito de precisão monetária.
+Ação realizada: comparar CA11, preços fixos, cupons disponíveis e os cálculos
+observados em E13/E17/E23/E24/E53.
+Entrada: valores como R$ 59,90, R$ 199,80, R$ 809,30 e cupom válido de 10%.
+Resultado observado: UI exibe duas casas e API retorna números monetários coerentes
+nesses casos. Não foi produzido um desconto válido com empate na terceira casa.
+Resultado esperado segundo a documentação: duas casas decimais, mas sem informar
+a política de desempate ou a etapa em que se arredonda valores intermediários.
+Status: ambiguidade de requisito (A04); nenhum erro numérico observado nesses casos.
+
+4. COMPORTAMENTOS SUSPEITOS E TRIAGEM
+
+B01 - Frete indevido no subtotal exatamente igual a R$ 200,00
+
+Status: possível bug, reproduzido na UI, na API de cálculo e na API de pedido.
+Prioridade sugerida: alta, por alterar o valor final em R$ 19,90.
+Requisito: CA06, reforçado pela tabela de cálculo; CA08 na variante com cupom.
+
+Reprodução mínima pela interface:
+1. Começar com carrinho vazio.
+2. Adicionar duas Mochilas Urbanas 20L, de R$ 100,00 cada.
+3. Abrir o carrinho.
+4. Observar subtotal R$ 200,00, frete R$ 19,90 e total R$ 219,90.
+5. Opcionalmente aplicar BEMVINDO10: desconto R$ 20,00, total incorreto R$ 199,90.
+
+Esperado: frete grátis; total R$ 200,00 sem cupom ou R$ 180,00 com cupom.
+Mensagem associada: o sistema informa faltante R$ 0,00 enquanto cobra frete.
+
+Reprodução mínima na API:
+POST /api/carrinho/calcular
+Content-Type: application/json
+{"itens":[{"produtoId":"P005","quantidade":2}]}
+
+A mesma regra incorreta foi observada em POST /api/pedidos. Foi reproduzida em
+duas abas independentes. Subtotais R$ 199,80 e R$ 209,90 funcionaram conforme a
+regra. Isso localiza o desvio no limite observado; não identifica o operador ou
+a implementação interna responsável. Não foi lido o código do servidor.
+
+Não é simplificação: Sobre este ambiente não relaxa regras de frete e CA06 é explícito.
+Evidências: imagens 01, 02 e 08; respostas api-01, api-19 e api-20.
+
+B02 - API ignora o máximo de cinco unidades por produto
+
+Status: possível bug, reproduzido nos dois endpoints POST.
+Prioridade sugerida: alta, por permitir confirmar pedido que viola regra explícita.
+Requisito: CA10 e código documentado QUANTIDADE_MAXIMA_EXCEDIDA.
+
+Reprodução mínima:
+POST /api/carrinho/calcular
+Content-Type: application/json
+{"itens":[{"produtoId":"P005","quantidade":6}]}
+
+Observado: HTTP 200 com seis unidades e total R$ 600,00.
+Esperado: HTTP 422 com código QUANTIDADE_MAXIMA_EXCEDIDA.
+
+Também foi enviado POST /api/pedidos com dados fictícios válidos e o mesmo item.
+Observado: HTTP 201, VZ-480026 e seis unidades confirmadas.
+Esperado: HTTP 422, sem confirmação do pedido.
+
+A UI bloqueia corretamente em cinco; portanto, existe divergência entre as
+camadas. Foi usada apenas a fronteira de seis unidades, sem buscar valores altos.
+
+Não é simplificação: ausência de estoque não elimina o limite por pedido; CA10
+expressamente o exige na interface e na API.
+Evidências: api-02 e api-11; observação da UI em E09.
+
+Outros comportamentos que NÃO foram classificados como bugs:
+- Carrinho vazio em outra aba: comportamento proposital documentado.
+- HTTP 200 no cálculo com cupom inválido/expirado versus 422 no pedido: contrato
+  expressamente diferente por endpoint.
+- Inclusão repetida agregada na UI versus ITEM_DUPLICADO na API para duas linhas:
+  representações diferentes, compatíveis com o contrato.
+- Números fictícios, sem consulta/estoque/login/pagamento online: escopo simplificado.
+- Valor JSON 59.9 em vez de 59.90: número em reais; zeros finais não indicam erro
+  de arredondamento. A UI deve e efetivamente exibiu o formato monetário.
+- Confirmação dizer "Seu pedido foi registrado": texto de simulação, acompanhado
+  do aviso de ambiente fictício; não foi interpretado como promessa de persistência real.
+
+5. AMBIGUIDADES DA DOCUMENTAÇÃO
+
+A01 - Ciclo de vida do cupom ao deixar o carrinho vazio
+Observado: remover o último produto preserva BEMVINDO10 para nova inclusão;
+Esvaziar carrinho remove o cupom. Não há regra sobre essa diferença.
+Interpretação provisória: nenhum dos comportamentos viola um critério explícito.
+Decisão necessária: definir se o cupom pertence à sessão da aba ou ao conjunto
+atual de itens, e se as duas formas de esvaziar devem ser equivalentes.
+Referências: E26/E27 e imagens 05/06.
+
+A02 - Promoção anuncia primeira compra, mas não existe histórico
+Observado: cupom reutilizável na mesma aba e com mesmo cliente fictício.
+Interpretação provisória: a API sem estado e a ausência de pedidos armazenados
+tornam esperado que não haja controle de primeira compra. O texto promocional
+poderia explicitar essa simplificação; não registrar reutilização como bug.
+Decisão necessária: esclarecer se "primeira compra" é apenas texto ilustrativo.
+Referências: CA01, Sobre este ambiente e E39.
+
+A03 - Persistência de rascunho no checkout
+Observado: atualizar mantém itens/cupom, mas apaga os três campos de cliente.
+Interpretação provisória: não há promessa de preservar esse rascunho.
+Decisão necessária: definir se campos e mensagens devem sobreviver a atualização
+ou retorno de navegação. Não exigir preservação em teste automatizado sem decisão.
+Referência: E35.
+
+A04 - Política de arredondamento
+CA11 informa duas casas, sem política de empate e sem detalhar etapas intermediárias.
+Os produtos fixos e o único cupom válido de 10% não produziram um caso de terceira
+casa ambígua nas entradas exploradas. VERAO2026 tem 15%, mas está expirado.
+Interpretação provisória: validar os exemplos calculáveis; não inventar preços
+ou um cupom válido novo para forçar esse caso no ambiente compartilhado.
+Decisão necessária: especificar política e fornecer dado adequado caso esse
+comportamento deva fazer parte do aceite futuro.
+Referência: E54.
+
+Detalhes não especificados, sem divergência observada:
+- Mensagens exatas de campo vazio e formato detalhado da UI de estado vazio.
+- Gramática de nomes além de nome/sobrenome e abrangência de formato de e-mail.
+- Apresentação e retenção local da confirmação após atualizar/voltar/avançar.
+Esses pontos não receberam expectativa inventada nem foram contabilizados como bugs.
+
+6. CANDIDATOS PARA TESTES AUTOMATIZADOS
+
+Nenhum foi implementado nesta fase. A lista indica comportamento esperado pela
+documentação; B01/B02 devem falhar até correção, sem adaptar a expectativa ao defeito.
+
+Prioridade alta
+
+T01 - Frete inclusivo em R$ 200,00, sem e com cupom.
+Camadas: UI + API de cálculo + API de pedido.
+Dados: P005 x 2; sem cupom / BEMVINDO10.
+Validar: frete=0, freteGratis=true, faltante=0, total=200/180, mensagem coerente.
+Origem: E18/E19/E51/E52, B01.
+
+T02 - Limite por produto: cinco permitido, seis rejeitado.
+Camadas: UI + ambos os POST da API.
+Validar: botões no máximo, HTTP 422 e QUANTIDADE_MAXIMA_EXCEDIDA para seis.
+Origem: E09/E44/E45, B02.
+
+T03 - Desconto e frete em subtotal menor, igual e maior que o limite.
+Dados: P001+P002 = 199,80; P005 x 2 = 200,00;
+P001+P005+P008 = 209,90. Testar com/sem BEMVINDO10.
+Validar: faltante, total e frete baseado no subtotal antes do desconto.
+Origem: E16-E22/E53.
+
+T04 - Cupom válido e normalização.
+Dados: BEMVINDO10, bemvindo10, BeMvInDo10 e espaços nas extremidades.
+Validar: 10% somente nos produtos, código normalizado e um único cupom ativo.
+Origem: E13-E15.
+
+T05 - Cupom inexistente e expirado por camada.
+Validar: mensagens, desconto zero, HTTP 200 no cálculo e HTTP 422 no pedido;
+CUPOM_INVALIDO/CUPOM_EXPIRADO. Repetir a ação não deve acumular desconto.
+Origem: E11/E12/E46-E49.
+
+T06 - Fluxo completo de compra fictícia.
+Validar: igualdade do resumo entre carrinho, checkout e confirmação, formato do
+número de pedido e carrinho limpo. Usar cliente fictício e CEP com/sem hífen.
+Origem: E31/E36/E38.
+
+Prioridade média
+
+T07 - Adicionar o mesmo produto duas vezes, alterar quantidade e remover linha.
+Validar: agregação, contador de unidades, preço x quantidade e subtotal.
+Origem: E04-E08.
+
+T08 - Recalcular cupom e frete depois de remover produtos.
+Validar: desconto proporcional e transição de frete grátis para pago abaixo de 200.
+Origem: E22/E23.
+
+T09 - Remover e reaplicar cupom.
+Validar: desconto zera ao remover e retorna uma única vez ao reaplicar;
+campo/botão de aplicação indisponíveis enquanto há cupom ativo.
+Origem: E14/E15.
+
+T10 - Carrinho vazio e proteção do checkout.
+Validar: estado vazio inicial/após remoção, retorno à vitrine, sem finalização;
+acesso direto a /checkout com vazio não confirma pedido; API rejeita itens vazios.
+Origem: E03/E25/E30/E41.
+
+T11 - Validação funcional da API.
+Validar: quantidade 0/-1/fracionada/texto, linhas duplicadas e produto inexistente.
+Oráculos: códigos e campos documentados; 404 no GET de produto inexistente.
+Origem: E40-E43.
+
+T12 - Validação de dados de cliente na UI e API.
+Validar: campos vazios, nome sem sobrenome, e-mail inválido, CEP curto/longo/letras;
+erro.campos com detalhes e ausência de confirmação.
+Origem: E32-E34/E50.
+
+T13 - Persistência e isolamento do carrinho.
+Validar: navegação e atualização mantêm itens/cupom; nova aba independente vazia.
+Para reproduzir a regra, abrir aba nova sem duplicar a aba com estado já existente.
+Origem: E28/E29.
+
+T14 - Catálogo e dados de referência.
+Validar: oito IDs, preços e nomes fixos; GET listagem e detalhe consistentes.
+Origem: E01/E40.
+
+Dependem de esclarecimento antes de fixar expectativas
+
+T15 - Preservar ou limpar cupom ao remover último item versus Esvaziar carrinho (A01).
+T16 - Persistir ou não rascunho de checkout após atualizar/navegar (A03).
+T17 - Casos de desempate de arredondamento, com dado apropriado e regra definida (A04).
+T18 - Interpretar a mensagem "primeira compra" sem exigir histórico fora de escopo (A02).
+
+Não exercitados nesta sessão; candidatos adicionais, sem resultado atribuído
+
+- JSON malformado, corpo não objeto, itens ausentes, item sem campos obrigatórios.
+- Produto inexistente dentro de POST, método HTTP não permitido e rota inexistente.
+- Outro navegador/janela anônima, fechar e reabrir sessão e duplicação de aba.
+- Interrupção de rede, acessibilidade completa, matriz de dispositivos/navegadores.
+- Validade no instante exato de vencimento e arredondamento de meia fração de centavo.
+
+Não candidatos neste escopo: carga, segurança, estresse, estoque, login, cadastro,
+pagamento real, envio de e-mails ou consulta/persistência de pedidos.
+
+EVIDÊNCIAS E RASTREABILIDADE
+
+Os caminhos abaixo são relativos à pasta deste relatório. As capturas representam
+os estados observados, e os arquivos api-* registram método/rota, entrada, status
+e corpo retornado. Há 8 capturas, 20 registros HTTP e a documentação lida.
+
+01-frete-limite-com-cupom.jpg: E19 / B01.
+02-frete-limite-sem-cupom.jpg: E18 / B01.
+03-validacoes-checkout.jpg: E33.
+04-pedido-ficticio-confirmado.jpg: E36.
+05-cupom-apos-remover-ultimo-item.jpg: E26 / A01.
+06-cupom-limpo-apos-esvaziar.jpg: E27 / A01.
+07-frete-antes-do-desconto-ok.jpg: E21.
+08-frete-limite-reproducao-independente.jpg: E18 / B01 em outra aba.
+
+Todos ficam em evidencias/. As entradas E01-E54 também registram os resultados
+observados nas interações que não receberam captura dedicada. Esses registros
+textuais não substituem um log de rede da interface: as respostas HTTP anexadas
+foram obtidas em requisições diretas independentes.
+
+Os números de pedido citados são evidências fictícias desta execução, não valores
+a fixar como expectativa em uma automação futura. Não foi auditada a implementação
+interna; hipóteses de causa foram mantidas separadas dos resultados observados.
