@@ -4,6 +4,14 @@ Suíte pequena de testes da [Verzel Store](https://verzel-store.qa-test-verzel-s
 
 O objetivo é verificar **cinco cenários principais** e manter regressões dos dois bugs reproduzidos. Os cinco cenários geram **11 testes independentes**: variantes de dados não representam novos casos funcionais.
 
+## Plano de testes no Google Docs
+
+[Abrir o plano público de testes da Verzel Store](https://docs.google.com/document/d/14eltvQO0OHD4kBVED044ndi_bI8VNPnFFEMGP9FYQYI/edit).
+
+O plano apresenta objetivo e escopo, ambiente e pré-condições, forma de execução, os cinco cenários e seus resultados esperados, critérios de aprovação/reprovação/bloqueio e registro da execução. Inclui os links para casos, evidências e relatório de defeitos. Qualquer pessoa com o link pode visualizar, sem solicitar acesso; a permissão é somente de leitura.
+
+O histórico diferencia a execução bem-sucedida do runner da aprovação funcional: CT-03 e CT-04 permanecem **reprovados** nas variantes afetadas por BUG-001 e BUG-002, mesmo com `test.fail()`. Nenhuma nova execução foi realizada para elaborar o plano.
+
 ## Relatório de defeitos no Google Docs
 
 [Abrir o relatório público de defeitos da Verzel Store](https://docs.google.com/document/d/1yNE4UrKaINRwG3k9Hg6c0MbgcrnqlcLTna6scdQBGEo/edit).
