@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { CatalogoPage } from '../pages/CatalogoPage';
+import { CarrinhoPage } from '../pages/CarrinhoPage';
 
 const cenarios = [
   {
@@ -26,17 +28,17 @@ const cenarios = [
 
 for (const cenario of cenarios) {
   test(`CT-03 | frete ${cenario.nome}`, async ({ page }, testInfo) => {
-    await page.goto('/');
+    const catalogo = new CatalogoPage(page);
+    const carrinho = new CarrinhoPage(page);
+    await catalogo.abrir();
     for (const produto of cenario.produtos) {
-      await page.getByRole('article', { name: produto, exact: true })
-        .getByRole('button', { name: 'Adicionar ao carrinho' }).click();
+      await catalogo.adicionarProduto(produto);
     }
-    await page.getByRole('link', { name: /^Carrinho/ }).click();
+    await catalogo.abrirCarrinho();
 
-    const resumo = page.getByRole('region', { name: 'Resumo do pedido' });
-    await expect(resumo.locator('[data-valor="subtotal"]')).toHaveText(cenario.subtotal);
-    await expect(resumo.locator('[data-valor="desconto"]')).toHaveText('R$ 0,00');
-    const frete = resumo.locator('[data-valor="frete"]');
+    await expect(carrinho.subtotal).toHaveText(cenario.subtotal);
+    await expect(carrinho.desconto).toHaveText('R$ 0,00');
+    const frete = carrinho.frete;
     await expect(frete).toBeVisible();
 
     if (cenario.bugConhecido) {

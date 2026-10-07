@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { CatalogoPage } from '../pages/CatalogoPage';
+import { CarrinhoPage } from '../pages/CarrinhoPage';
 
 test('CT-04 | UI permite 4 e 5 unidades e bloqueia a sexta', async ({ page }) => {
-  await page.goto('/');
-  const adicionarMochila = page.getByRole('article', { name: 'Mochila Urbana 20L', exact: true })
-    .getByRole('button', { name: 'Adicionar ao carrinho' });
-  for (let unidade = 0; unidade < 4; unidade++) {
-    await adicionarMochila.click();
-  }
-  await page.getByRole('link', { name: /^Carrinho/ }).click();
+  const catalogo = new CatalogoPage(page);
+  const carrinho = new CarrinhoPage(page);
+  await catalogo.abrir();
+  await catalogo.adicionarProduto('Mochila Urbana 20L', 4);
+  await catalogo.abrirCarrinho();
 
-  const quantidade = page.getByRole('status', { name: 'Quantidade de Mochila Urbana 20L' });
-  const aumentar = page.getByRole('button', { name: 'Aumentar quantidade de Mochila Urbana 20L' });
+  const quantidade = carrinho.quantidade('Mochila Urbana 20L');
+  const aumentar = carrinho.botaoAumentarQuantidade('Mochila Urbana 20L');
   await expect(quantidade).toHaveText('4');
   await expect(aumentar).toBeEnabled();
 
@@ -19,9 +19,9 @@ test('CT-04 | UI permite 4 e 5 unidades e bloqueia a sexta', async ({ page }) =>
   await expect(aumentar).toBeDisabled();
 
   // A UI bloqueia a tentativa desabilitando os controles; não forçamos o clique.
-  await page.getByRole('link', { name: 'Produtos', exact: true }).click();
-  await expect(adicionarMochila).toBeDisabled();
-  await page.getByRole('link', { name: /^Carrinho/ }).click();
+  await carrinho.voltarParaProdutos();
+  await expect(catalogo.botaoAdicionar('Mochila Urbana 20L')).toBeDisabled();
+  await catalogo.abrirCarrinho();
   await expect(quantidade).toHaveText('5');
 });
 

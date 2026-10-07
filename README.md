@@ -83,14 +83,20 @@ npm run test:report
 - BUG-001 recebe uma captura explícita; BUG-002 recebe a requisição/resposta da API; CT-05 recebe uma captura da confirmação, mesmo quando esses testes têm o resultado previsto.
 - [docs/execucao-testes.md](docs/execucao-testes.md): registro da execução validada, com contagem separada das falhas conhecidas.
 - `evidencias/automacao/`: cópia preservada da execução de 06/10/2026, com JSON integral, captura de BUG-001, resposta de BUG-002 e confirmação do checkout.
+- `evidencias/automacao-pom/`: os mesmos tipos de evidência, preservados na reexecução de 07/10/2026 após a adoção de Page Object Model.
 
 Os relatórios gerados são ignorados pelo Git e podem ser substituídos em novas execuções. A pasta `evidencias/` também contém as evidências preservadas da exploração; elas não são removidas pelo runner, cujo diretório de saída é apenas `evidencias/playwright/`.
 
-Execução validada: **9 testes aprovados, 2 falhas esperadas (BUG-001 e BUG-002) e nenhuma falha inesperada**. O resumo `11 passed` do runner inclui as duas falhas previstas; os detalhes estão no registro de execução.
+Última execução validada, em **07/10/2026 após a refatoração para Page Object Model**: **9 testes aprovados, 2 falhas esperadas (BUG-001 e BUG-002) e nenhuma falha inesperada**, em 25,3 segundos. `npm run typecheck` também passou. O resumo `11 passed` do runner inclui as duas falhas previstas; os detalhes estão no registro de execução.
 
 ## Estrutura
 
 ```text
+pages/
+  CatalogoPage.ts
+  CarrinhoPage.ts
+  CheckoutPage.ts
+  ConfirmacaoPage.ts
 tests/
   cupom.spec.ts
   frete.spec.ts
@@ -110,7 +116,33 @@ README.md
 
 Os testes usam `test`, `expect`, `async/await`, locators por papel/nome e rótulo, além dos atributos `data-valor` já existentes na interface para identificar os valores do resumo. As asserções de UI usam a espera automática do Playwright; não há `waitForTimeout`, XPath, mocks ou dependência entre testes.
 
-O único `beforeEach` está no arquivo de cupons, pois seus quatro testes começam com a mesma mochila no carrinho. O restante usa passos diretos; não há Page Objects ou camadas de framework adicionais. Os testes de API usam a fixture `request`.
+O único `beforeEach` está no arquivo de cupons, pois seus quatro testes começam com a mesma mochila no carrinho. Os testes de API usam diretamente a fixture `request`.
+
+## Page Object Model
+
+As páginas concentram os locators e as ações da interface. Os arquivos `.spec.ts` mantêm os dados, os cenários, os `expect()` e as marcações de bugs conhecidos. Essa divisão facilita a manutenção dos seletores e o reaproveitamento dos fluxos, seguindo a abordagem de [Page Object Model do Playwright](https://playwright.dev/docs/pom).
+
+| Página | Responsabilidade |
+| --- | --- |
+| `CatalogoPage` | Abrir a loja, adicionar produtos e acessar o carrinho |
+| `CarrinhoPage` | Aplicar cupom, expor valores e controles de quantidade e abrir o checkout |
+| `CheckoutPage` | Preencher nome, e-mail e CEP e confirmar o pedido |
+| `ConfirmacaoPage` | Expor mensagem de sucesso, número do pedido, itens e valores |
+
+Exemplo de uso nos testes:
+
+```typescript
+const catalogo = new CatalogoPage(page);
+const carrinho = new CarrinhoPage(page);
+
+await catalogo.abrir();
+await catalogo.adicionarProduto('Mochila Urbana 20L');
+await catalogo.abrirCarrinho();
+await carrinho.aplicarCupom('BEMVINDO10');
+await expect(carrinho.total).toHaveText('R$ 109,90');
+```
+
+Cada objeto recebe a fixture `page` do próprio teste. Não há estado compartilhado entre testes, classe base, herança ou fixtures personalizadas. A suíte mantém os mesmos cinco cenários e 11 testes.
 
 ## Cinco cenários automatizados
 

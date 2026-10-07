@@ -2,6 +2,26 @@
 
 Execução automatizada dos **cinco cenários**, distribuídos em **11 testes independentes**, sem alterar os resultados esperados para acomodar os bugs conhecidos.
 
+## Reexecução após Page Object Model — 07/10/2026
+
+Os quatro arquivos de testes passaram a usar `CatalogoPage`, `CarrinhoPage`, `CheckoutPage` e `ConfirmacaoPage` conforme o fluxo. Os dados, resultados esperados, verificações e marcações `test.fail()` foram preservados. Os dois testes de API continuam usando diretamente a fixture `request`.
+
+- **Início:** 07/10/2026, às 18:44:17, America/Sao_Paulo.
+- **Ambiente:** mesma URL da Verzel Store; Windows, Node.js 24.11.0, npm 11.6.1 e Playwright Test 1.63.0; projeto `chromium`, headless.
+- **Verificação de tipos:** `npm run typecheck`, incluindo `pages/**/*.ts`, concluída sem erros.
+- **Execução:** `npm test`; um worker, zero retries, 11 testes em **25,3 segundos**, código de saída 0.
+- **Resultado real:** **9 aprovados, 2 falhas esperadas, 0 falhas inesperadas, 0 passagens inesperadas e 0 ignorados**.
+- **BUG-001:** o assert continua esperando `Grátis` e recebeu `R$ 19,90`, com subtotal de R$ 200,00.
+- **BUG-002:** o assert continua esperando HTTP 422 e recebeu HTTP 200, com seis unidades aceitas.
+
+As falhas ocorreram nos asserts dos dois bugs documentados; a preparação dos cenários passou. O terminal exibiu `11 passed (25.3s)`, incluindo as duas falhas previstas. Nenhuma expectativa foi ajustada para aceitar um defeito, e não foi necessário repetir a suíte.
+
+Evidências desta reexecução: [JSON integral](../evidencias/automacao-pom/resultado-playwright.json), [captura de BUG-001](../evidencias/automacao-pom/BUG-001-frete.png), [resposta de BUG-002](../evidencias/automacao-pom/BUG-002-resposta-api.json) e [confirmação do checkout](../evidencias/automacao-pom/CT-05-confirmacao.png). Essas cópias ficam preservadas em `evidencias/automacao-pom/`. O relatório HTML local agora corresponde a esta execução.
+
+## Histórico — execução de 06/10/2026
+
+O registro abaixo e os arquivos de `evidencias/automacao/` correspondem à execução anterior à refatoração.
+
 ## Ambiente e comando
 
 - **Data:** 06/10/2026, início às 16:53:41, America/Sao_Paulo.
@@ -74,6 +94,6 @@ As duas falhas ocorreram nos asserts dos defeitos documentados, não na prepara�
 - [JSON integral preservado desta execução](../evidencias/automacao/resultado-playwright.json), contendo resultados reais, status esperados, erros e anexos.
 - [Captura da confirmação do checkout](../evidencias/automacao/CT-05-confirmacao.png).
 - Captura de BUG-001 e resposta de BUG-002 nos links acima.
-- Relatório HTML local em `playwright-report/`; abrir com `npm run test:report`.
+- O relatório HTML local em `playwright-report/` corresponde à execução mais recente; abrir com `npm run test:report`.
 
 A pasta `evidencias/automacao/` preserva esta execução independentemente das próximas. O runner pode substituir `evidencias/playwright/`, `evidencias/resultado-playwright.json` e `playwright-report/` quando for executado novamente. As evidências anteriores da exploração permanecem separadas.
