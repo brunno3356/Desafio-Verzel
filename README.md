@@ -16,7 +16,7 @@ O histórico diferencia a execução bem-sucedida do runner da aprovação funci
 
 [Abrir o relatório público de defeitos da Verzel Store](https://docs.google.com/document/d/1yNE4UrKaINRwG3k9Hg6c0MbgcrnqlcLTna6scdQBGEo/edit).
 
-O documento reúne **BUG-001 e BUG-002**, com ambiente e versão, pré-condições, passos de reprodução, resultado esperado, resultado obtido, impacto e prints incorporados. Qualquer pessoa com o link pode visualizar, sem solicitar acesso; a permissão é somente de leitura.
+O documento reúne **BUG-001 e BUG-002**, confirmados contra regras explícitas, e **BUG-003 — possível defeito de validação do nome**, com comportamento reproduzido e classificação pendente de esclarecimento do requisito. Inclui ambiente e versão, pré-condições, passos, resultado esperado, resultado obtido, impacto e prints incorporados. Qualquer pessoa com o link pode visualizar, sem solicitar acesso; a permissão é somente de leitura.
 
 ## Tecnologias
 
@@ -184,6 +184,21 @@ Captura do relatório de uma execução já existente, iniciada em 06/10/2026 à
 As duas variantes usam [`test.fail()`](https://playwright.dev/docs/test-annotations), que **executa os testes** e registra a expectativa de falha. Se passarem após uma correção, o runner acusa passagem inesperada. Não usamos `skip`, `fixme` nem assertions ajustadas para aceitar o defeito.
 
 Um processo encerrado com código zero pode incluir falhas esperadas. Por isso, o registro de execução diferencia testes aprovados de defeitos conhecidos reproduzidos. Os detalhes e passos de reprodução estão em [docs/bugs.md](docs/bugs.md).
+
+### Achado exploratório em triagem
+
+**BUG-003 — Checkout aceita nome composto apenas por números:** em 08/10/2026, o nome `1111111111 222222` foi aceito e o pedido `VZ-274835` foi confirmado. Está registrado como **possível defeito**, pois a regra exige nome e sobrenome, mas não detalha os caracteres permitidos. [Registro completo e ressalvas](docs/bugs.md#bug-003--checkout-aceita-nome-composto-apenas-por-números).
+
+<details>
+<summary>Ver print do BUG-003 — confirmação com nome numérico</summary>
+
+![BUG-003: pedido VZ-274835 confirmado com a saudação “Obrigado, 1111111111”](evidencias/relatorio-defeitos/BUG-003-nome-numerico-confirmacao.jpg)
+
+Captura original da reprodução exploratória de 08/10/2026. O endereço de e-mail não aparece na imagem.
+
+</details>
+
+Esse achado não foi acrescentado à automação: permanecem cinco cenários e 11 testes. O CEP de oito dígitos está de acordo com o formato documentado, e a mensagem de e-mail inválido relatada pelo usuário não se repetiu na reprodução.
 
 ## Particularidades do ambiente
 

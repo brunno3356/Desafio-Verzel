@@ -1,6 +1,8 @@
-# Bugs reproduzidos
+# Relatório de defeitos
 
-Referência: [documentação da Verzel Store](https://verzel-store.qa-test-verzel-store.workers.dev/documentacao), VZS-142, versão 2.3.0. Estes dois defeitos foram reproduzidos na exploração. A execução da automação está registrada em [execucao-testes.md](execucao-testes.md).
+Referência: [documentação da Verzel Store](https://verzel-store.qa-test-verzel-store.workers.dev/documentacao), VZS-142, versão 2.3.0. BUG-001 e BUG-002 são defeitos reproduzidos contra regras explícitas. BUG-003 tem comportamento reproduzido e está classificado como **possível defeito**, pendente de esclarecimento do requisito. A execução da automação está registrada em [execucao-testes.md](execucao-testes.md).
+
+[Relatório público no Google Docs](https://docs.google.com/document/d/1yNE4UrKaINRwG3k9Hg6c0MbgcrnqlcLTna6scdQBGEo/edit).
 
 ## BUG-001 — Frete cobrado no limite exato de R$ 200
 
@@ -39,7 +41,35 @@ A API de cálculo e a confirmação de pedido também apresentaram o desvio na e
 
 A UI bloqueia corretamente em cinco. Ausência de controle de estoque não elimina o limite explícito por pedido. A regressão automatizada usa o endpoint de cálculo; não há cenário adicional de pedido com seis unidades nesta suíte.
 
-## Como interpretar as falhas conhecidas
+## BUG-003 — Checkout aceita nome composto apenas por números
+
+- **Título:** [Checkout] Pedido é confirmado com nome composto apenas por números.
+- **Status:** Possível defeito; comportamento reproduzido. Classificação pendente de esclarecimento do requisito.
+- **Data da reprodução:** 08/10/2026, America/Sao_Paulo.
+- **Ambiente e versão:** Verzel Store (teste), Windows e navegador integrado do Codex; versão do navegador não registrada. Documentação VZS-142, versão 2.3.0. Build/commit do sistema não informado.
+- **Prioridade sugerida:** Média, sujeita à triagem.
+- **Pré-condição:** Nova aba, carrinho com uma Mochila Urbana 20L (P005), sem cupom.
+- **Dados observados:** Nome `1111111111 222222`; CEP `11111111`; e-mail informado pelo usuário, em formato válido, omitido desta versão pública.
+
+**Passos para reproduzir:**
+
+1. Acessar a loja, adicionar uma unidade de P005 e abrir o carrinho.
+2. Selecionar **Finalizar compra**.
+3. Preencher nome `1111111111 222222`, CEP `11111111` e um e-mail em formato válido.
+4. Clicar em **Confirmar pedido** e verificar a confirmação.
+
+Para repetir sem dados pessoais, pode-se usar `qa.exploratorio@example.com`; é uma sugestão de massa, não o endereço usado nesta evidência.
+
+- **Resultado esperado (interpretação a validar):** Impedir a confirmação com um nome inteiramente numérico e orientar o preenchimento de nome e sobrenome. A documentação exige nome e sobrenome, mas não especifica os caracteres permitidos.
+- **Resultado obtido:** Pedido `VZ-274835` confirmado; a tela exibiu “Obrigado, 1111111111”. Subtotal R$ 100,00, desconto R$ 0,00, frete R$ 19,90 e total R$ 119,90.
+- **Impacto:** Permite concluir o fluxo com identificação composta somente por números, prejudicando a qualidade dos dados do cliente.
+- **Evidência:** [Captura original da confirmação](../evidencias/relatorio-defeitos/BUG-003-nome-numerico-confirmacao.jpg). O print não expõe o e-mail.
+- **Automação:** Reprodução exploratória pela UI; não incluída nos 11 testes existentes. Não houve verificação direta da API deste achado.
+- **Decisão pendente:** Esclarecer a regra de caracteres do nome antes de promover o registro a defeito confirmado. Não há simplificação explícita autorizando nomes numéricos.
+
+**Triagem dos demais dados:** `11111111` tem oito dígitos e atende ao formato de CEP documentado; não existe exigência de consultar sua existência. A mensagem “Informe um e-mail válido.” foi relatada pelo usuário, mas não apareceu na reprodução com os dados fornecidos. Não foram registrados novos bugs de CEP ou e-mail.
+
+## Como interpretar as falhas conhecidas da automação
 
 `test.fail()` executa o teste e exige que ele falhe. Não equivale a `skip` ou `fixme`. O motivo e o assert continuam visíveis no relatório. Se o defeito for corrigido e o assert passar, o Playwright acusa **passagem inesperada**, exigindo revisão e remoção da marcação.
 
